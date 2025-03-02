@@ -1,0 +1,13 @@
+const express = require("express")
+const route = express.Router()
+const todo = require("./todo")
+const user = require("./user")
+const login = require("./authentication/login")
+const registration = require("./authentication/registration")
+const chat = require("./chat")
+route.use("/todo", todo)
+route.use("/user", user)
+route.use("/auth", login)
+route.use("/auth", registration)
+route.use("/chat",chat)
+module.exports = route
