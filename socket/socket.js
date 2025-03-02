@@ -5,7 +5,7 @@ const setupSocket = (server) => {
     const io = new Server(server, {
         // pingTimeout: 1000,
         cors: {
-            origin: ["http://localhost:5173", "http://localhost:5174"],
+            origin: ["http://localhost:5173", "https://to-chat.netlify.app"],
         }
     });
     // Handle Socket.IO events
