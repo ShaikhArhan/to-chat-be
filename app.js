@@ -60,6 +60,7 @@ const combineRoute = require("./routes/combineRoute");
 app.use("/api", combineRoute);
 
 // MongoDB Connection
+console.log('process.env.MONGO_URL: ', process.env.MONGO_URL);
 mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
