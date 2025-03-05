@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const { updateChat, getOneToOneChat } = require("../controllers/chat/chat");
+const { updateChat, getOneToOneChat, updateOneMessageStatus, updateManyMessageStatus } = require("../controllers/chat/chat");
 const { updateChatStatus } = require("../controllers/user/user");
 const setupSocket = (server) => {
     const io = new Server(server, {
@@ -34,18 +34,28 @@ const setupSocket = (server) => {
             }
         });
 
-        socket.on("send message", async ({ chatId, userId, newMessage }, callback) => {
-            if (!chatId || !userId) {
+        socket.on("send message", async ({ chatId, user, newMessage }, callback) => {
+            if (!chatId || !user) {
                 console.error("Error: chatId or userId is missing");
                 return;
             }
+            const userId = user._id
             const sendMessage = await updateChat(userId, chatId + userId, newMessage);
             if (sendMessage.success) {
                 callback({ success: true })
-                newMessage.sender = "received";
-                const receivedMessage = await updateChat(chatId, userId + chatId, newMessage);
+                // newMessage.sender = "received";
+                const receivedMessage = await updateChat(chatId, userId + chatId, { messageId: newMessage.messageId, text: newMessage.text, sender: "received", date: newMessage.date });
                 if (receivedMessage.success) {
-                    io.to(chatId).emit("receive message", { chatId: userId + chatId, newMessage: newMessage });
+                    const condition = {
+                        "chat.messagesByDate.messages.messageId": newMessage.messageId
+                    }
+                    const statusChange = await updateOneMessageStatus(chatId + userId, condition, newMessage, { messageDelivered: { status: "delivered", date: new Date() } })
+                    // console.log('statusChange: ', statusChange);
+                    if (statusChange.success) {
+                        io.to(userId).emit("messageStatusChanged", { userId, chatId: chatId + userId })
+                    }
+                    io.to(chatId).emit("messageNotification", { newMessage: newMessage, sender: user });
+                    io.to(chatId).emit("receive message", {senderId: userId, chatId: userId + chatId, newMessage: { messageId: newMessage.messageId, text: newMessage.text, sender: "received", date: newMessage.date } });
                 } else {
                     console.error("Error: -socket -receive message");
                 }
@@ -54,12 +64,22 @@ const setupSocket = (server) => {
             }
         });
 
+        socket.on("messageSeen", async ({ senderId, chatId }) => {
+            const condition = {
+                "chat.messagesByDate.messages.messageSeen.status": "unseen"
+            }
+            const statusChanged = await updateManyMessageStatus(senderId, chatId, condition, { messageSeen: { status: "seen", date: new Date() } })
+            if (statusChanged.success) {
+                io.to(senderId).emit("messageStatusChanged", { userId: senderId, chatId })
+            }
+        })
+
         socket.on("offline", async (userId) => {
             console.log("Client disconnected:", socket.id);
             await updateChatStatus({ id: userId, chatStatus: "offline" });
-        
+
             io.emit("getUser"); // Notify all clients when a user goes offline
-        });        
+        });
 
         socket.on("disconnect", () => {
             console.log("Client disconnected:", socket.id);

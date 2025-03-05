@@ -346,7 +346,7 @@ const getOneToOneChat = async (userId, chatId) => {
         }
 
         // console.log("Fetching chat for:", userId, chatId);
-        
+
         const userChat = await chatModel.findOne(
             { userId, "chat.chatId": chatId },
             { chat: { $elemMatch: { chatId } } }
@@ -365,9 +365,80 @@ const getOneToOneChat = async (userId, chatId) => {
     }
 };
 
+const updateOneMessageStatus = async (chatId, condition, message, data) => {
+    // console.log('chatId, message, data: ', chatId, message, data);
+    try {
+        let updateFields = {};
+        for (let key in data) {
+            updateFields[`chat.$[chatElem].messagesByDate.$[dateElem].messages.$[msgElem].${key}`] = data[key];
+        }
+
+        const updatedMessage = await chatModel.findOneAndUpdate(
+            {
+                "chat.chatId": chatId,
+                ...condition
+            },
+            { $set: updateFields },
+            {
+                arrayFilters: [
+                    { "chatElem.chatId": chatId },
+                    { "dateElem.date": new Date(message.date).toLocaleDateString() },
+                    { "msgElem.messageId": message.messageId }
+                ],
+                new: true
+            }
+        );
+
+        if (!updatedMessage) {
+            return { message: "message not found", success: false }
+        }
+        // console.log('updatedMessage: ', updatedMessage);
+        return { message: "message updated successfully", success: true }
+    } catch (error) {
+        console.error("Error in updating message", error);
+        return { message: "Error in updating message", success: false };
+    }
+}
+// updateMany
+const updateManyMessageStatus = async (userId, chatId, condition = {}, data) => {
+    console.log('updateManyMessageStatus -userId, chatId,: ', userId, chatId,);
+    try {
+        let updateFields = {};
+        for (let key in data) {
+            updateFields[`chat.$[chatElem].messagesByDate.$[].messages.$[].${key}`] = data[key];
+        }
+
+        const updatedResult = await chatModel.updateMany(
+            {
+                userId: userId,
+                "chat.chatId": chatId,
+                ...condition
+            },
+            { $set: updateFields },
+            {
+                arrayFilters: [
+                    { "chatElem.chatId": chatId }
+                ]
+            }
+        );
+
+        if (updatedResult.modifiedCount === 0) {
+            return { message: "No messages updated", success: false };
+        }
+
+        return { message: "Messages updated successfully", success: true };
+    } catch (error) {
+        console.error("Error in updating messages", error);
+        return { message: "Error in updating messages", success: false };
+    }
+};
+
+
 //  Export functions
 module.exports = {
     createNewChat,
     updateChat,
-    getOneToOneChat
+    getOneToOneChat,
+    updateOneMessageStatus,
+    updateManyMessageStatus
 };

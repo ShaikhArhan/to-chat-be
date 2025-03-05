@@ -60,7 +60,7 @@ const combineRoute = require("./routes/combineRoute");
 app.use("/api", combineRoute);
 
 // MongoDB Connection
-console.log('process.env.MONGO_URL: ', process.env.MONGO_URL);
+// console.log('process.env.MONGO_URL: ', process.env.MONGO_URL);
 mongoose.connect(`${process.env.MONGO_URL}`)
     .then(() => console.log("Connected to MongoDB"))
     .catch((error) => console.log("Error connecting to MongoDB", error));
