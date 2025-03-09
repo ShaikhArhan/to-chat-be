@@ -57,6 +57,9 @@ app.options("*", cors());
 
 // Routes
 const combineRoute = require("./routes/combineRoute");
+app.use("/",()=>{
+    console.log(">>>>Backend Running<<<<")
+})
 app.use("/api", combineRoute);
 
 // MongoDB Connection
