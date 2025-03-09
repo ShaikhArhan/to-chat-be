@@ -356,7 +356,7 @@ const getOneToOneChat = async (userId, chatId) => {
             // console.log("Chat found: ", JSON.stringify(userChat, null, 2));
             return { data: userChat, message: "Chat fetched successfully", success: true };
         } else {
-            console.log("No chat found");
+            // console.log("No chat found");
             return { message: "No chat found", success: false };
         }
     } catch (error) {
@@ -401,7 +401,7 @@ const updateOneMessageStatus = async (chatId, condition, message, data) => {
 }
 // updateMany
 const updateManyMessageStatus = async (userId, chatId, condition = {}, data) => {
-    console.log('updateManyMessageStatus -userId, chatId,: ', userId, chatId,);
+    // console.log('updateManyMessageStatus -userId, chatId,: ', userId, chatId,);
     try {
         let updateFields = {};
         for (let key in data) {
@@ -425,7 +425,6 @@ const updateManyMessageStatus = async (userId, chatId, condition = {}, data) => 
         if (updatedResult.modifiedCount === 0) {
             return { message: "No messages updated", success: false };
         }
-
         return { message: "Messages updated successfully", success: true };
     } catch (error) {
         console.error("Error in updating messages", error);
@@ -433,6 +432,67 @@ const updateManyMessageStatus = async (userId, chatId, condition = {}, data) => 
     }
 };
 
+// const countUnseenMessage = async (req, res) => {
+//     const { senderId, chatId } = req.body
+//     console.log('countUnseenMessage -senderId, chatId: ', senderId, chatId);
+//     try {
+//         if (!senderId || !chatId) {
+//             return { message: "senderId and chatId are required", success: false };
+//         }
+//         const unseenMessage = await chatModel.find({ userId: senderId, "chat.chatId": chatId, "chat.messagesByDate.messages.messageSeen.status": "unseen" })
+//         console.log('unseenMessage: ', unseenMessage);
+//         if (!unseenMessage) {
+//             return res.json({ message: "Failed to fetch unseen messages", success: false })
+//         }
+//         return res.json({ data: unseenMessage, message: "Fetch unseen messages successfuly", success: true })
+//     } catch (error) {
+//         return res.json({ message: "Error in fetching unseen messages", success: false })
+//     }
+// }
+const countUnseenMessage = async (req, res) => {
+    const { senderId, chatId } = req.body;
+    // console.log('countUnseenMessage - senderId, chatId:', senderId, chatId);
+    try {
+        if (!senderId || !chatId) {
+            return res.json({ message: "senderId and chatId are required", success: false });
+        }
+
+        const unseenMessage = await chatModel.aggregate([
+            {
+                $match: {
+                    userId: senderId,
+                    "chat.chatId": chatId
+                }
+            },
+            { $unwind: "$chat" },
+            { $match: { "chat.chatId": chatId } },
+            { $unwind: "$chat.messagesByDate" },
+            { $unwind: "$chat.messagesByDate.messages" },
+            {
+                $match: {
+                    "chat.messagesByDate.messages.messageSeen.status": "unseen"
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    unseenMessages: "$chat.messagesByDate.messages"
+                }
+            }
+        ]);
+        // console.log('unseenMessage:', unseenMessage);
+
+        if (!unseenMessage || unseenMessage.length === 0) {
+            return res.json({ message: "No unseen messages found", success: false });
+        }
+
+        return res.json({ data: unseenMessage, message: "Fetched unseen messages successfully", success: true });
+
+    } catch (error) {
+        console.error("Error fetching unseen messages:", error);
+        return res.json({ message: "Error in fetching unseen messages", success: false });
+    }
+};
 
 //  Export functions
 module.exports = {
@@ -440,5 +500,6 @@ module.exports = {
     updateChat,
     getOneToOneChat,
     updateOneMessageStatus,
-    updateManyMessageStatus
+    updateManyMessageStatus,
+    countUnseenMessage
 };

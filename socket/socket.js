@@ -41,7 +41,10 @@ const setupSocket = (server) => {
             }
             const userId = user._id
             const sendMessage = await updateChat(userId, chatId + userId, newMessage);
-            if (sendMessage.success) {
+            if (userId == chatId) {
+                io.to(chatId).emit("receive message", { senderId: userId, chatId: userId + chatId, newMessage: { messageId: newMessage.messageId, text: newMessage.text, sender: "You", date: newMessage.date } });
+            }
+            else if (sendMessage.success) {
                 callback({ success: true })
                 // newMessage.sender = "received";
                 const receivedMessage = await updateChat(chatId, userId + chatId, { messageId: newMessage.messageId, text: newMessage.text, sender: "received", date: newMessage.date });
@@ -55,11 +58,12 @@ const setupSocket = (server) => {
                         io.to(userId).emit("messageStatusChanged", { userId, chatId: chatId + userId })
                     }
                     io.to(chatId).emit("messageNotification", { newMessage: newMessage, sender: user });
-                    io.to(chatId).emit("receive message", {senderId: userId, chatId: userId + chatId, newMessage: { messageId: newMessage.messageId, text: newMessage.text, sender: "received", date: newMessage.date } });
+                    io.to(chatId).emit("receive message", { senderId: userId, chatId: userId + chatId, newMessage: { messageId: newMessage.messageId, text: newMessage.text, sender: "received", date: newMessage.date } });
                 } else {
                     console.error("Error: -socket -receive message");
                 }
-            } else {
+            }
+            else {
                 console.error("Error: -socket -send message");
             }
         });
@@ -75,7 +79,7 @@ const setupSocket = (server) => {
         })
 
         socket.on("offline", async (userId) => {
-            console.log("Client disconnected:", socket.id);
+            // console.log("Client disconnected:", socket.id);
             await updateChatStatus({ id: userId, chatStatus: "offline" });
 
             io.emit("getUser"); // Notify all clients when a user goes offline
