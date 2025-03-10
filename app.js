@@ -61,6 +61,9 @@ app.get("/api/test", (req, res) => {
     // console.log(">>>>Backend Running<<<<")
     return res.json({ status: ">>>>Backend Running<<<<" })
 })
+app.get("/", (req, res) => {
+    res.send("Welcome to the backend!");
+});
 app.use("/api", combineRoute);
 
 // MongoDB Connection
