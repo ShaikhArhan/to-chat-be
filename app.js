@@ -57,8 +57,9 @@ app.options("*", cors());
 
 // Routes
 const combineRoute = require("./routes/combineRoute");
-app.use("/",()=>{
-    console.log(">>>>Backend Running<<<<")
+app.get("/api/test", (req, res) => {
+    // console.log(">>>>Backend Running<<<<")
+    return res.json({ status: ">>>>Backend Running<<<<" })
 })
 app.use("/api", combineRoute);
 
