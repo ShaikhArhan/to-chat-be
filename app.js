@@ -45,16 +45,16 @@ require("dotenv").config();
 const app = express();
 
 // Middleware
+app.use(express.json());
 app.use(cors({
-    origin: "*",
+    origin: ["http://localhost:5173", "https://to-chat.netlify.app"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }));
-app.options("*", cors());
-app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-//////////////////////////
+app.options("*", cors());
+
 // Routes
 const combineRoute = require("./routes/combineRoute");
 app.get("/api/test", (req, res) => {
@@ -67,6 +67,7 @@ app.get("/", (req, res) => {
 app.use("/api", combineRoute);
 
 // MongoDB Connection
+
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log("Connected to MongoDB"))
     .catch((error) => console.log("Error connecting to MongoDB", error));
