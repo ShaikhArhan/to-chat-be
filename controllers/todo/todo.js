@@ -19,7 +19,7 @@ const add = async (req, res) => {
 const get = async (req, res) => {
     const { userId } = req.body
     try {
-        const data = await todo.find({userId:userId})
+        const data = await todo.find({ userId: userId })
         if (data) {
             res.json({ data: data, message: "Todos fetched successfully", success: true })
         }
@@ -32,10 +32,10 @@ const get = async (req, res) => {
 
 }
 
-const getByMessage = async (req, res) => {    
-    const { message } = req.body    
+const getByMessage = async (req, res) => {
+    const { userId, message } = req.body
     try {
-        const data = await todo.find({ message: { $regex: message, $options: "i" } })
+        const data = await todo.find({ userId: userId, message: { $regex: message, $options: "i" } })
         if (data) {
             res.json({ data: data, message: "Todos fetched successfully", success: true })
         }

@@ -77,7 +77,7 @@ const setupSocket = (server) => {
                 io.to(senderId).emit("messageStatusChanged", { userId: senderId, chatId })
             }
         })
-
+        
         socket.on("offline", async (userId) => {
             // console.log("Client disconnected:", socket.id);
             await updateChatStatus({ id: userId, chatStatus: "offline" });
